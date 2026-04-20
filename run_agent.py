@@ -2568,6 +2568,13 @@ class AIAgent:
         provider_lower = (self.provider or "").lower()
         if "glm" not in model_lower and provider_lower != "zai":
             return False
+        # sglang and vLLM expose /v1/models and report finish_reason
+        # correctly; only Ollama misreports truncated output as "stop".
+        # Exclude non-Ollama local servers (sglang, vLLM, LM Studio, etc.)
+        # that host GLM models over OpenAI-compatible /v1 endpoints.
+        base_url_lower = (self.base_url or "").lower()
+        if "/v1" in base_url_lower and "ollama" not in base_url_lower and ":11434" not in base_url_lower:
+            return False
         if "ollama" in self._base_url_lower or ":11434" in self._base_url_lower:
             return True
         return bool(self.base_url and is_local_endpoint(self.base_url))
